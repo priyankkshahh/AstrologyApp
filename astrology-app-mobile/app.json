@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Holistic Divination",
+    "slug": "holistic-divination-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a0033"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.holisticdivination.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to calculate accurate astrological readings based on your birth place.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photos to upload palm images for palmistry readings.",
+        "NSCameraUsageDescription": "We need access to your camera to take photos of your palm for palmistry readings."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a0033"
+      },
+      "package": "com.holisticdivination.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Holistic Divination to use your location for accurate birth chart calculations."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Holistic Divination to access your photos for palm reading uploads."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    }
+  }
+}
