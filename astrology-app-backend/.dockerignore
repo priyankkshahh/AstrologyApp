@@ -1,11 +1,56 @@
+# Dependencies
 node_modules
 npm-debug.log
-dist
-.git
+yarn-error.log
+
+# Environment files
 .env
-.env.*
-logs
-*.log
+.env.local
+.env.*.local
+.env.test
+.env.staging
+
+# Testing
 coverage
+.nyc_output
+tests
+*.test.ts
+*.spec.ts
+__tests__
+
+# Build artifacts
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# IDE
 .vscode
 .idea
+*.swp
+*.swo
+*~
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.cache
+*.pid
+*.seed
+*.pid.lock

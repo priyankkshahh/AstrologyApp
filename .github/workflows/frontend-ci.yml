@@ -1,0 +1,366 @@
+name: Frontend CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'phase-*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Code Quality Checks
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./astrology-app-mobile
+        run: npm run lint
+
+      - name: Check TypeScript types
+        working-directory: ./astrology-app-mobile
+        run: npx tsc --noEmit
+
+      - name: Check formatting
+        working-directory: ./astrology-app-mobile
+        run: npx prettier --check 'src/**/*.{ts,tsx}'
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-format
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ./astrology-app-mobile
+        run: npm run test -- --coverage --testPathPattern=unit --testPathIgnorePatterns=integration,e2e
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./astrology-app-mobile/coverage/lcov.info
+          flags: frontend-unit
+          name: frontend-unit-coverage
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Run integration tests
+        working-directory: ./astrology-app-mobile
+        run: npm run test -- --testPathPattern=integration
+
+  # Security Scan
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: lint-and-format
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: ./astrology-app-mobile
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=astrology-app-mobile/package.json
+
+  # Build Web Version
+  build-web:
+    name: Build Web Version
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Build web version
+        working-directory: ./astrology-app-mobile
+        run: npm run build:web || npx expo export:web
+
+      - name: Upload web build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-build
+          path: astrology-app-mobile/web-build/
+
+      - name: Analyze bundle size
+        working-directory: ./astrology-app-mobile
+        run: |
+          npx bundle-alyzer || echo "Bundle analyzer not installed"
+
+  # Deploy Web to Vercel
+  deploy-web-staging:
+    name: Deploy Web (Staging)
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: web-staging
+      url: https://staging.astrology-app.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (Staging)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prebuilt --prod=false'
+          working-directory: ./astrology-app-mobile
+
+  deploy-web-production:
+    name: Deploy Web (Production)
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: web-production
+      url: https://astrology-app.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prebuilt --prod'
+          working-directory: ./astrology-app-mobile
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://astrology-app.com || exit 1
+
+  # Build Mobile with EAS
+  build-mobile:
+    name: Build Mobile App
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: 50.x.x
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        working-directory: ./astrology-app-mobile
+        run: npm ci
+
+      - name: Create EAS build for iOS (Development)
+        if: github.ref == 'refs/heads/develop'
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform ios --profile development --non-interactive
+
+      - name: Create EAS build for Android (Development)
+        if: github.ref == 'refs/heads/develop'
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform android --profile development --non-interactive
+
+      - name: Create EAS build for iOS (Production)
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform ios --profile production --non-interactive
+
+      - name: Create EAS build for Android (Production)
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform android --profile production --non-interactive
+
+      - name: Submit to App Store (Production)
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./astrology-app-mobile
+        run: eas submit --platform ios --non-interactive
+        env:
+          EXPO_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+
+      - name: Submit to Google Play (Production)
+        if: github.ref == 'refs/heads/main'
+        working-directory: ./astrology-app-mobile
+        run: eas submit --platform android --non-interactive
+
+  # Deploy to TestFlight (Internal Testing)
+  deploy-testflight:
+    name: Deploy to TestFlight
+    runs-on: ubuntu-latest
+    needs: build-mobile
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: testflight
+      url: testflight://
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: 50.x.x
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build for TestFlight
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform ios --profile preview --non-interactive
+
+      - name: Submit to TestFlight
+        working-directory: ./astrology-app-mobile
+        run: eas submit --platform ios --non-interactive
+
+  # Deploy to Google Play Internal Testing
+  deploy-play-internal:
+    name: Deploy to Google Play Internal
+    runs-on: ubuntu-latest
+    needs: build-mobile
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: play-internal
+      url: https://play.google.com/apps/internaltest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: 50.x.x
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build for Internal Testing
+        working-directory: ./astrology-app-mobile
+        run: eas build --platform android --profile preview --non-interactive
+
+      - name: Submit to Internal Testing
+        working-directory: ./astrology-app-mobile
+        run: eas submit --platform android --non-interactive
+
+  # Notify Deployment
+  notify-deployment:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-web-production, build-mobile]
+    if: always() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Frontend deployment completed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()

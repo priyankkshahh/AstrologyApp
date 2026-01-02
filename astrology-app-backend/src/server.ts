@@ -17,6 +17,7 @@ import profileRoutes from './routes/profileRoutes';
 import readingRoutes from './routes/readingRoutes';
 import palmistryRoutes from './routes/palmistryRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import { performHealthCheck, getLiveness, getReadiness } from './health';
 
 const app: Application = express();
 
@@ -59,12 +60,16 @@ const limiter = rateLimit({
 
 app.use('/api/auth', limiter);
 
-app.get('/api/health', (req: Request, res: Response) => {
+// Health check endpoints
+app.get('/health', getLiveness);
+app.get('/ready', getReadiness);
+app.get('/api/health', performHealthCheck);
+app.get('/api/version', (req: Request, res: Response) => {
   res.json({
-    success: true,
-    message: 'API is running',
-    timestamp: new Date().toISOString(),
+    name: 'Holistic Divination App API',
+    version: process.env.npm_package_version || '1.0.0',
     environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
   });
 });
 

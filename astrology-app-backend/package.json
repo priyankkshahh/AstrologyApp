@@ -9,6 +9,9 @@
     "start": "node dist/server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:performance": "k6 run tests/performance/load-test.js",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --fix",
     "format": "prettier --write 'src/**/*.ts'"
@@ -71,6 +74,9 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
+  },
+  "optionalDependencies": {
+    "k6": "^0.47.0"
   },
   "engines": {
     "node": ">=18.0.0",
