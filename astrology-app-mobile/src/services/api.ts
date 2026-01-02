@@ -125,40 +125,6 @@ class ApiService {
   async healthCheck() {
     return this.api.get<ApiResponse>('/health');
   }
-
-  // Dashboard API methods
-  async getDashboard() {
-    return this.api.get<ApiResponse>('/dashboard');
-  }
-
-  async getDashboardInsights() {
-    return this.api.get<ApiResponse>('/dashboard/insights');
-  }
-
-  async getReadingsSummary(params?: { limit?: number; module?: string }) {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.module) queryParams.append('module', params.module);
-    
-    const queryString = queryParams.toString();
-    return this.api.get<ApiResponse>(`/dashboard/readings-summary${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async getQuickCards(limit: number = 5) {
-    return this.api.get<ApiResponse>(`/dashboard/quick-cards?limit=${limit}`);
-  }
-
-  async getDashboardPreferences() {
-    return this.api.get<ApiResponse>('/dashboard/preferences');
-  }
-
-  async updateDashboardPreferences(preferences: any) {
-    return this.api.put<ApiResponse>('/dashboard/preferences', preferences);
-  }
-
-  async refreshDashboard() {
-    return this.api.post<ApiResponse>('/dashboard/refresh');
-  }
 }
 
 export default new ApiService();
