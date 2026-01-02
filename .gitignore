@@ -1,47 +1,88 @@
-# Node modules
+# Dependencies
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Environment files
 .env
 .env.local
 .env.*.local
-
-# Logs
-logs/
-*.log
+.env.production
+.env.staging
+.env.test
+!.env.example
 
 # Build outputs
 dist/
 build/
-.expo/
-.expo-shared/
+.web-build/
+*.tsbuildinfo
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.swn
+*~
 .DS_Store
 
-# Testing
-coverage/
+# Logs
+logs/
+*.log
+npm-debug.log*
 
 # Firebase
-firebase-adminsdk.json
-serviceAccountKey.json
+firebase-debug.log*
+firebase-debug.*.log*
 
-# OAuth keys
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.cache/
+.parcel-cache/
+temp/
+tmp/
+
+# Expo
+.expo/
+.expo-shared/
+*.jks
 *.p8
 *.p12
 *.key
-*.jks
 *.mobileprovision
+*.orig.*
+web-build/
 
-# Temporary files
-*.tmp
-*.temp
-.cache/
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Security
+serviceAccountKey.json
+*.pem
+*.key
+*-service-account.json
+
+# Backups
+backups/
+*.backup
+*.sql.backup
+
+# Package manager
+package-lock.json
+yarn.lock
