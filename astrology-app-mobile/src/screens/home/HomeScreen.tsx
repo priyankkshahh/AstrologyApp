@@ -10,6 +10,7 @@ import colors from '../../styles/colors';
 import fonts from '../../styles/fonts';
 import { spacing } from '../../styles/spacing';
 
+// This is now a simplified landing screen - DashboardScreen is the new main home
 export const HomeScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user, profile, loading } = useAppSelector((state) => state.auth);
@@ -31,9 +32,9 @@ export const HomeScreen: React.FC = () => {
         </View>
 
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>✨ Daily Insight</Text>
+          <Text style={styles.cardTitle}>✨ Your Cosmic Journey</Text>
           <Text style={styles.cardText}>
-            Your cosmic journey awaits. Explore the mysteries of the universe through personalized readings.
+            Explore the mysteries of the universe through personalized readings across astrology, numerology, tarot, and palmistry.
           </Text>
         </Card>
 

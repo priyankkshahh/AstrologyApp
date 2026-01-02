@@ -16,6 +16,7 @@ import userRoutes from './routes/userRoutes';
 import profileRoutes from './routes/profileRoutes';
 import readingRoutes from './routes/readingRoutes';
 import palmistryRoutes from './routes/palmistryRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 const app: Application = express();
 
@@ -72,6 +73,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/readings', readingRoutes);
 app.use('/api/palmistry', palmistryRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
